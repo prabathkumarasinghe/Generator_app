@@ -3,6 +3,7 @@ class Record {
   double hours;
   double fuelAdded;
   double fuelUsed; // NEW
+  double fuelCost;
   String date;
 
   Record({
@@ -10,6 +11,7 @@ class Record {
     required this.hours,
     required this.fuelAdded,
     required this.fuelUsed,
+    required this.fuelCost,
     required this.date,
   });
 
@@ -18,6 +20,7 @@ class Record {
     'hours': hours,
     'fuelAdded': fuelAdded,
     'fuelUsed': fuelUsed,
+    'fuelCost': fuelCost,
     'date': date,
   };
 
@@ -29,6 +32,7 @@ class Record {
       fuelUsed: _toDouble(
         json['fuelUsed'],
       ), // Handle old records without fuelUsed
+      fuelCost: _toDouble(json['fuelCost']),
       date: json['date'] ?? '',
     );
   }

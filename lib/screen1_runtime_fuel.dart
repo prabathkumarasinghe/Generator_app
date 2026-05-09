@@ -3,6 +3,7 @@ import 'models/record.dart';
 import 'models/generator.dart';
 import 'screen2_generator_list.dart';
 import 'screen5_app_info.dart';
+import 'screen6_report.dart';
 import 'services/storage_service.dart';
 
 class Screen1 extends StatefulWidget {
@@ -21,6 +22,7 @@ class _Screen1State extends State<Screen1> {
 
   final TextEditingController hoursController = TextEditingController();
   final TextEditingController fuelController = TextEditingController();
+  final TextEditingController fuelRateController = TextEditingController();
   final TextEditingController dateController = TextEditingController();
 
   @override
@@ -28,6 +30,7 @@ class _Screen1State extends State<Screen1> {
     super.initState();
     hoursController.addListener(_saveEntryDraft);
     fuelController.addListener(_saveEntryDraft);
+    fuelRateController.addListener(_saveEntryDraft);
     dateController.addListener(_saveEntryDraft);
     _loadGenerators();
   }
@@ -63,6 +66,7 @@ class _Screen1State extends State<Screen1> {
       selectedGenerator = restoredGenerator;
       hoursController.text = draft['hours']?.toString() ?? '';
       fuelController.text = draft['fuel']?.toString() ?? '';
+      fuelRateController.text = draft['fuelRate']?.toString() ?? '';
       dateController.text = draft['date']?.toString() ?? '';
     });
     _isRestoringDraft = false;
@@ -78,6 +82,7 @@ class _Screen1State extends State<Screen1> {
         'generatorCode': selectedGenerator?.code ?? '',
         'hours': hoursController.text,
         'fuel': fuelController.text,
+        'fuelRate': fuelRateController.text,
         'date': dateController.text,
       });
     } catch (e) {
@@ -89,9 +94,11 @@ class _Screen1State extends State<Screen1> {
   void dispose() {
     hoursController.removeListener(_saveEntryDraft);
     fuelController.removeListener(_saveEntryDraft);
+    fuelRateController.removeListener(_saveEntryDraft);
     dateController.removeListener(_saveEntryDraft);
     hoursController.dispose();
     fuelController.dispose();
+    fuelRateController.dispose();
     dateController.dispose();
     super.dispose();
   }
@@ -108,7 +115,10 @@ class _Screen1State extends State<Screen1> {
         MaterialPageRoute(builder: (_) => const Screen2()),
       );
     } else if (index == 2) {
-      return; // Stay on Screen1 (record entry screen)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const Screen6()),
+      );
     }
   }
 
@@ -189,8 +199,11 @@ class _Screen1State extends State<Screen1> {
                             double.tryParse(hoursController.text) ?? 0;
                         double fuelAdded =
                             double.tryParse(fuelController.text) ?? 0;
+                        double fuelRate =
+                            double.tryParse(fuelRateController.text) ?? 0;
                         double usageRate = generator.usageRate;
-                        double fuelUsed = hours * usageRate;
+                        double fuelUsed = isRuntime ? hours * usageRate : 0;
+                        double fuelCost = fuelAdded * fuelRate;
 
                         ///////////////////////////////////////////////////
                         /// 🔹 CHECK FOR EXISTING RECORD ON SAME DAY
@@ -206,6 +219,7 @@ class _Screen1State extends State<Screen1> {
                           records[existingIndex].hours += hours;
                           records[existingIndex].fuelAdded += fuelAdded;
                           records[existingIndex].fuelUsed += fuelUsed;
+                          records[existingIndex].fuelCost += fuelCost;
                         } else {
                           ///////////////////////////////////////////////////
                           /// 🔹 CREATE NEW RECORD
@@ -216,6 +230,7 @@ class _Screen1State extends State<Screen1> {
                               hours: hours,
                               fuelAdded: fuelAdded,
                               fuelUsed: fuelUsed,
+                              fuelCost: fuelCost,
                               date: enteredDate,
                             ),
                           );
@@ -231,6 +246,7 @@ class _Screen1State extends State<Screen1> {
                         _isRestoringDraft = true;
                         hoursController.clear();
                         fuelController.clear();
+                        fuelRateController.clear();
                         dateController.clear();
                         await StorageService.clearEntryDraft();
                         _isRestoringDraft = false;
@@ -293,6 +309,7 @@ class _Screen1State extends State<Screen1> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAF93),
         elevation: 0,
+        centerTitle: true,
         title: const Text(
           "Fuel Tracker",
           style: TextStyle(color: Colors.white),
@@ -381,7 +398,7 @@ class _Screen1State extends State<Screen1> {
                     _dateInput(),
                   ] else ...[
                     _input(
-                      "Added Fuel Amount",
+                      "Added Fuel Amount (L)",
                       controller: fuelController,
                       keyboardType: TextInputType.number,
                     ),
@@ -390,7 +407,11 @@ class _Screen1State extends State<Screen1> {
                     const SizedBox(height: 16),
                     _dateInput(),
                     const SizedBox(height: 16),
-                    _input("Fuel Rate"),
+                    _input(
+                      "Fuel Rate (Rs)",
+                      controller: fuelRateController,
+                      keyboardType: TextInputType.number,
+                    ),
                   ],
 
                   const SizedBox(height: 24),

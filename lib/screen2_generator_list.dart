@@ -62,6 +62,7 @@ class _Screen2State extends State<Screen2> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAF93),
         elevation: 0,
+        centerTitle: true,
         title: const Text(
           "Generator List",
           style: TextStyle(color: Colors.white),

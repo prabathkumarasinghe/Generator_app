@@ -46,6 +46,7 @@ class _Screen5State extends State<Screen5> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAF93),
         elevation: 0,
+        centerTitle: true,
         title: const Text("About App", style: TextStyle(color: Colors.white)),
         leading: const Icon(Icons.menu, color: Colors.white),
         actions: const [

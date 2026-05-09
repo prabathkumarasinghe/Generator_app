@@ -63,6 +63,7 @@ class _Screen3State extends State<Screen3> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAF93),
         elevation: 0,
+        centerTitle: true,
         title: const Text(
           "Add Generator",
           style: TextStyle(color: Colors.white),
@@ -128,12 +129,12 @@ class _Screen3State extends State<Screen3> {
             /////////////////////////////////////////////////////
             /// Capacity
             /////////////////////////////////////////////////////
-            _label("Fuel Tank Capacity"),
+            _label("Fuel Tank Capacity (L)"),
             TextField(
               controller: capacityController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                hintText: "Enter capacity",
+                hintText: "Enter capacity (L)",
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
@@ -147,12 +148,12 @@ class _Screen3State extends State<Screen3> {
             /////////////////////////////////////////////////////
             /// Usage Rate
             /////////////////////////////////////////////////////
-            _label("Fuel Usage Rate"),
+            _label("Fuel Usage Rate (L/hr)"),
             TextField(
               controller: rateController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                hintText: "Enter rate",
+                hintText: "Enter rate (L/hr)",
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
@@ -160,6 +161,8 @@ class _Screen3State extends State<Screen3> {
                 ),
               ),
             ),
+
+            const SizedBox(height: 24),
 
             /////////////////////////////////////////////////////
             /// 🔹 SAVE BUTTON

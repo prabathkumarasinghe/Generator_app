@@ -111,6 +111,7 @@ class _Screen4State extends State<Screen4> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAF93),
         elevation: 0,
+        centerTitle: true,
         title: Text(widget.name, style: const TextStyle(color: Colors.white)),
         leading: const Icon(Icons.menu, color: Colors.white),
         actions: [
@@ -151,13 +152,13 @@ class _Screen4State extends State<Screen4> {
             _label("Generator Code"),
             _input(widget.code),
 
-            _label("Fuel Tank Capacity"),
+            _label("Fuel Tank Capacity (L)"),
             _input("${widget.capacity.toStringAsFixed(0)}L"),
 
-            _label("Fuel Usage Rate"),
+            _label("Fuel Usage Rate (L/hr)"),
             _input("${widget.usageRate.toStringAsFixed(0)}L/hr"),
 
-            _label("Fuel remaining"),
+            _label("Fuel Remaining (L)"),
             _input("${remainingFuel.toStringAsFixed(1)}L"),
 
             const SizedBox(height: 30),
@@ -266,13 +267,13 @@ class _Screen4State extends State<Screen4> {
                 _dialogInput("Generator Code", codeController),
                 const SizedBox(height: 12),
                 _dialogInput(
-                  "Fuel Tank Capacity",
+                  "Fuel Tank Capacity (L)",
                   capacityController,
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
                 _dialogInput(
-                  "Fuel Usage Rate",
+                  "Fuel Usage Rate (L/hr)",
                   usageRateController,
                   keyboardType: TextInputType.number,
                 ),
@@ -318,6 +319,7 @@ class _Screen4State extends State<Screen4> {
                           hours: record.hours,
                           fuelAdded: record.fuelAdded,
                           fuelUsed: record.fuelUsed,
+                          fuelCost: record.fuelCost,
                           date: record.date,
                         );
                       }

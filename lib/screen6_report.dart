@@ -59,12 +59,17 @@ class _Screen6State extends State<Screen6> {
       0,
       (sum, r) => sum + r.fuelUsed,
     );
+    final totalFuelCost = records.fold<double>(
+      0,
+      (sum, r) => sum + r.fuelCost,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F2),
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAF93),
         elevation: 0,
+        centerTitle: true,
         title: const Text("Report", style: TextStyle(color: Colors.white)),
         leading: const Icon(Icons.menu, color: Colors.white),
         actions: [
@@ -91,6 +96,7 @@ class _Screen6State extends State<Screen6> {
                 _summary("Hours", totalHours.toStringAsFixed(1)),
                 _summary("Added", "${totalFuelAdded.toStringAsFixed(1)}L"),
                 _summary("Used", "${totalFuelUsed.toStringAsFixed(1)}L"),
+                _summary("Cost", "Rs ${totalFuelCost.toStringAsFixed(2)}"),
               ],
             ),
           ),
@@ -128,6 +134,9 @@ class _Screen6State extends State<Screen6> {
                             ),
                             Text(
                               "Fuel used: ${record.fuelUsed.toStringAsFixed(1)}L",
+                            ),
+                            Text(
+                              "Fuel cost: Rs ${record.fuelCost.toStringAsFixed(2)}",
                             ),
                           ],
                         ),
