@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'models/generator.dart';
 import 'screen1_runtime_fuel.dart';
 import 'screen2_generator_list.dart';
-import '../models/generator.dart';
-import '../services/storage_service.dart';
+import 'screen5_app_info.dart';
+import 'screen6_report.dart';
+import 'services/storage_service.dart';
 
 class Screen3 extends StatefulWidget {
   const Screen3({super.key});
@@ -12,13 +14,21 @@ class Screen3 extends StatefulWidget {
 }
 
 class _Screen3State extends State<Screen3> {
-
   final TextEditingController nameController = TextEditingController();
   final TextEditingController codeController = TextEditingController();
   final TextEditingController capacityController = TextEditingController();
   final TextEditingController rateController = TextEditingController();
 
-  int _selectedIndex = 2;
+  final int _selectedIndex = 2;
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    codeController.dispose();
+    capacityController.dispose();
+    rateController.dispose();
+    super.dispose();
+  }
 
   ///////////////////////////////////////////////////////////
   /// 🔹 BOTTOM NAVIGATION
@@ -34,6 +44,11 @@ class _Screen3State extends State<Screen3> {
         context,
         MaterialPageRoute(builder: (_) => const Screen2()),
       );
+    } else if (index == 2) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const Screen6()),
+      );
     }
   }
 
@@ -48,11 +63,21 @@ class _Screen3State extends State<Screen3> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAF93),
         elevation: 0,
-        title: const Text("Add Generator", style: TextStyle(color: Colors.white),),
-        leading: const Icon(Icons.menu, color: Colors.white,),
-        actions: const [
-          Icon(Icons.info_outline, color: Colors.white,),
-          SizedBox(width: 10),
+        title: const Text(
+          "Add Generator",
+          style: TextStyle(color: Colors.white),
+        ),
+        leading: const Icon(Icons.menu, color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const Screen5()),
+              );
+            },
+          ),
         ],
       ),
 
@@ -64,7 +89,6 @@ class _Screen3State extends State<Screen3> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             /////////////////////////////////////////////////////
             /// Generator Name
             /////////////////////////////////////////////////////
@@ -137,9 +161,6 @@ class _Screen3State extends State<Screen3> {
               ),
             ),
 
-
-
-
             /////////////////////////////////////////////////////
             /// 🔹 SAVE BUTTON
             /////////////////////////////////////////////////////
@@ -153,8 +174,26 @@ class _Screen3State extends State<Screen3> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
+                onPressed: () async {
+                  try {
+                    final generators = await StorageService.loadGenerators();
+                    generators.add(
+                      GeneratorModel(
+                        name: nameController.text.trim(),
+                        code: codeController.text.trim(),
+                        capacity: double.tryParse(capacityController.text) ?? 0,
+                        usageRate: double.tryParse(rateController.text) ?? 0,
+                      ),
+                    );
+                    await StorageService.saveGenerators(generators);
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(e.toString())));
+                  }
                 },
                 child: const Text("Save"),
               ),
@@ -176,8 +215,10 @@ class _Screen3State extends State<Screen3> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
           BottomNavigationBarItem(
-              //icon: Icon(Icons.electrical_services), label: ""),
-              icon: Icon(Icons.local_gas_station), label: ""),
+            //icon: Icon(Icons.electrical_services), label: ""),
+            icon: Icon(Icons.local_gas_station),
+            label: "",
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.edit_document), label: ""),
         ],
       ),
@@ -190,30 +231,11 @@ class _Screen3State extends State<Screen3> {
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 10, bottom: 6),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.grey),
-      ),
+      child: Text(text, style: const TextStyle(color: Colors.grey)),
     );
   }
 
   ///////////////////////////////////////////////////////////
   /// 🔹 INPUT FIELD
   ///////////////////////////////////////////////////////////
-  Widget _input(String hint) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFD0D0D0)),
-      ),
-      child: Text(
-        hint,
-        style: const TextStyle(color: Colors.black38),
-      ),
-    );
-  }
 }

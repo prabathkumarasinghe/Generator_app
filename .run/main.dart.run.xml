@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="main.dart" type="FlutterRunConfigurationType" factoryName="Flutter" nameIsGenerated="true">
+    <option name="filePath" value="$PROJECT_DIR$/lib/main.dart" />
+    <method v="2">
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="generator_app" run_configuration_type="FlutterRunConfigurationType" />
+    </method>
+  </configuration>
+</component>

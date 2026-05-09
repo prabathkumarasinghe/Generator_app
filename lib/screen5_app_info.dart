@@ -11,7 +11,7 @@ class Screen5 extends StatefulWidget {
 }
 
 class _Screen5State extends State<Screen5> {
-  int _selectedIndex = 0;
+  final int _selectedIndex = 0;
 
   ///////////////////////////////////////////////////////////
   /// 🔹 BOTTOM NAVIGATION
@@ -46,10 +46,10 @@ class _Screen5State extends State<Screen5> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAF93),
         elevation: 0,
-        title: const Text("About App", style: TextStyle(color: Colors.white),),
-        leading: const Icon(Icons.menu, color: Colors.white,),
+        title: const Text("About App", style: TextStyle(color: Colors.white)),
+        leading: const Icon(Icons.menu, color: Colors.white),
         actions: const [
-          Icon(Icons.info_outline, color: Colors.white,),
+          Icon(Icons.info_outline, color: Colors.white),
           SizedBox(width: 10),
         ],
       ),
@@ -89,17 +89,11 @@ class _Screen5State extends State<Screen5> {
               children: const [
                 Text(
                   "Generator Fuel App",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 18),
                 ),
                 SizedBox(height: 30),
 
-                Text(
-                  "Version: 1.0.0",
-                  style: TextStyle(color: Colors.white),
-                ),
+                Text("Version: 1.0.0", style: TextStyle(color: Colors.white)),
                 SizedBox(height: 20),
 
                 Text(
@@ -108,10 +102,7 @@ class _Screen5State extends State<Screen5> {
                 ),
                 SizedBox(height: 20),
 
-                Text(
-                  "Flutter v3.1.4",
-                  style: TextStyle(color: Colors.white),
-                ),
+                Text("Flutter v3.1.4", style: TextStyle(color: Colors.white)),
               ],
             ),
           ),
@@ -131,8 +122,10 @@ class _Screen5State extends State<Screen5> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
           BottomNavigationBarItem(
-              //icon: Icon(Icons.electrical_services), label: ""),
-              icon: Icon(Icons.local_gas_station), label: ""),
+            //icon: Icon(Icons.electrical_services), label: ""),
+            icon: Icon(Icons.local_gas_station),
+            label: "",
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.edit_document), label: ""),
         ],
       ),

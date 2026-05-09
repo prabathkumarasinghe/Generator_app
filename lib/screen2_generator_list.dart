@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+
+import 'models/generator.dart';
 import 'screen1_runtime_fuel.dart';
 import 'screen3_add_generator.dart';
 import 'screen4_generator_details.dart';
+import 'screen5_app_info.dart';
+import 'screen6_report.dart';
+import 'services/storage_service.dart';
 
 class Screen2 extends StatefulWidget {
   const Screen2({super.key});
@@ -11,21 +16,23 @@ class Screen2 extends StatefulWidget {
 }
 
 class _Screen2State extends State<Screen2> {
-  int _selectedIndex = 1;
+  final int _selectedIndex = 1;
+  List<GeneratorModel> generators = [];
 
-  ///////////////////////////////////////////////////////////
-  /// 🔹 GENERATOR DATA (DYNAMIC LIST)
-  ///////////////////////////////////////////////////////////
-  List<Map<String, String>> generators = [
-    {"name": "Gen A - CAT2", "fuel": "120L"},
-    {"name": "Gen B - CAT3", "fuel": "120L"},
-    {"name": "Gen C - CAT4", "fuel": "120L"},
-    {"name": "Gen D - CAT5", "fuel": "120L"},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    loadData();
+  }
 
-  ///////////////////////////////////////////////////////////
-  /// 🔹 BOTTOM NAVIGATION
-  ///////////////////////////////////////////////////////////
+  Future<void> loadData() async {
+    final loadedGenerators = await StorageService.loadGenerators();
+    if (!mounted) return;
+    setState(() {
+      generators = loadedGenerators;
+    });
+  }
+
   void _onItemTapped(int index) {
     if (index == 0) {
       Navigator.pushReplacement(
@@ -33,35 +40,45 @@ class _Screen2State extends State<Screen2> {
         MaterialPageRoute(builder: (_) => const Screen1()),
       );
     } else if (index == 2) {
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const Screen3()),
+        MaterialPageRoute(builder: (_) => const Screen6()),
       );
     }
+  }
+
+  Future<void> _openAddGenerator() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const Screen3()),
+    );
+    await loadData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F2),
-
-      ///////////////////////////////////////////////////////////
-      /// 🔹 APP BAR
-      ///////////////////////////////////////////////////////////
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAF93),
         elevation: 0,
-        title: const Text("Generator List", style: TextStyle(color: Colors.white),),
-        leading: const Icon(Icons.menu, color: Colors.white,),
-        actions: const [
-          Icon(Icons.info_outline, color: Colors.white,),
-          SizedBox(width: 10),
+        title: const Text(
+          "Generator List",
+          style: TextStyle(color: Colors.white),
+        ),
+        leading: const Icon(Icons.menu, color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const Screen5()),
+              );
+            },
+          ),
         ],
       ),
-
-      ///////////////////////////////////////////////////////////
-      /// 🔹 BODY (LIST WITH SWIPE DELETE)
-      ///////////////////////////////////////////////////////////
       body: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 20),
         itemCount: generators.length,
@@ -69,15 +86,10 @@ class _Screen2State extends State<Screen2> {
           final item = generators[index];
 
           return Dismissible(
-            key: Key(item["name"]!),
-
-            /////////////////////////////////////////////////////
-            /// SWIPE LEFT BACKGROUND
-            /////////////////////////////////////////////////////
+            key: ValueKey('${item.code}-${item.name}'),
             direction: DismissDirection.endToStart,
             background: Container(
-              margin:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               padding: const EdgeInsets.symmetric(horizontal: 20),
               alignment: Alignment.centerRight,
               decoration: BoxDecoration(
@@ -86,77 +98,76 @@ class _Screen2State extends State<Screen2> {
               ),
               child: const Icon(Icons.delete, color: Colors.white),
             ),
-
-            /////////////////////////////////////////////////////
-            /// CONFIRM DELETE
-            /////////////////////////////////////////////////////
             confirmDismiss: (direction) async {
-              return await showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text("Are you sure?"),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text("Cancel"),
+              return await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text("Are you sure?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text("Cancel"),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text("Delete"),
+                        ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text("Delete"),
-                    ),
-                  ],
-                ),
-              );
+                  ) ??
+                  false;
             },
-
-            /////////////////////////////////////////////////////
-            /// REMOVE ITEM
-            /////////////////////////////////////////////////////
-            onDismissed: (direction) {
-              setState(() {
-                generators.removeAt(index);
-              });
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Generator deleted")),
-              );
+            onDismissed: (direction) async {
+              generators.removeAt(index);
+              await StorageService.saveGenerators(generators);
+              setState(() {});
             },
-
-            /////////////////////////////////////////////////////
-            /// GREEN LIST ITEM (FIGMA STYLE)
-            /////////////////////////////////////////////////////
             child: GestureDetector(
-              onTap: () {
-                Navigator.push(
+              onTap: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => Screen4(
-                      name: item["name"]!,
-                      code: item["name"]!,
-                      fuel: item["fuel"]!,
+                      name: item.name,
+                      code: item.code,
+                      capacity: item.capacity,
+                      usageRate: item.usageRate,
                     ),
                   ),
                 );
+                await loadData();
               },
               child: Container(
                 margin: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 10),
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 18),
+                  horizontal: 16,
+                  vertical: 18,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFA8D5A2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      item["name"]!,
-                      style: const TextStyle(fontSize: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.name, style: const TextStyle(fontSize: 16)),
+                        Text(
+                          item.code,
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
-                      item["fuel"]!,
+                      "${item.capacity.toStringAsFixed(0)}L",
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -169,24 +180,11 @@ class _Screen2State extends State<Screen2> {
           );
         },
       ),
-
-      ///////////////////////////////////////////////////////////
-      /// 🔹 FLOATING ADD BUTTON
-      ///////////////////////////////////////////////////////////
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF7FA6C9),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const Screen3()),
-          );
-        },
+        onPressed: _openAddGenerator,
         child: const Icon(Icons.add),
       ),
-
-      ///////////////////////////////////////////////////////////
-      /// 🔹 BOTTOM NAVIGATION
-      ///////////////////////////////////////////////////////////
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -197,8 +195,9 @@ class _Screen2State extends State<Screen2> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
           BottomNavigationBarItem(
-              //icon: Icon(Icons.electrical_services), label: ""),
-              icon: Icon(Icons.local_gas_station), label: ""),
+            icon: Icon(Icons.local_gas_station),
+            label: "",
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.edit_document), label: ""),
         ],
       ),

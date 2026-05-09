@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import 'screen1_runtime_fuel.dart';
 import 'screen2_generator_list.dart';
-import 'screen3_add_generator.dart';
+import 'screen5_app_info.dart';
+import 'screen6_report.dart';
+import 'models/generator.dart';
+import 'models/record.dart';
+import 'services/storage_service.dart';
 
 class Screen4 extends StatefulWidget {
   final String name;
   final String code;
-  final String fuel;
+  final double capacity;
+  final double usageRate;
 
   const Screen4({
     super.key,
     required this.name,
     required this.code,
-    required this.fuel,
+    required this.capacity,
+    required this.usageRate,
   });
 
   @override
@@ -20,7 +26,57 @@ class Screen4 extends StatefulWidget {
 }
 
 class _Screen4State extends State<Screen4> {
-  int _selectedIndex = 1;
+  final int _selectedIndex = 1;
+  final TextEditingController dateController = TextEditingController();
+  final TextEditingController startDateController = TextEditingController();
+  final TextEditingController endDateController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController codeController = TextEditingController();
+  final TextEditingController capacityController = TextEditingController();
+  final TextEditingController usageRateController = TextEditingController();
+
+  double remainingFuel = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController.text = widget.name;
+    codeController.text = widget.code;
+    capacityController.text = widget.capacity.toStringAsFixed(0);
+    usageRateController.text = widget.usageRate.toStringAsFixed(0);
+    _calculateRemainingFuel();
+  }
+
+  Future<void> _calculateRemainingFuel() async {
+    List<Record> allRecords = await StorageService.loadRecords();
+    List<Record> generatorRecords = allRecords
+        .where((r) => r.generator == widget.name)
+        .toList();
+
+    double totalFuelUsed = generatorRecords.fold(
+      0.0,
+      (sum, r) => sum + r.fuelUsed,
+    );
+    double totalFuelAdded = generatorRecords.fold(
+      0.0,
+      (sum, r) => sum + r.fuelAdded,
+    );
+    remainingFuel = widget.capacity - totalFuelUsed + totalFuelAdded;
+
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    dateController.dispose();
+    startDateController.dispose();
+    endDateController.dispose();
+    nameController.dispose();
+    codeController.dispose();
+    capacityController.dispose();
+    usageRateController.dispose();
+    super.dispose();
+  }
 
   ///////////////////////////////////////////////////////////
   /// 🔹 BOTTOM NAVIGATION
@@ -37,9 +93,9 @@ class _Screen4State extends State<Screen4> {
         MaterialPageRoute(builder: (_) => const Screen2()),
       );
     } else if (index == 2) {
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const Screen3()),
+        MaterialPageRoute(builder: (_) => const Screen6()),
       );
     }
   }
@@ -55,11 +111,18 @@ class _Screen4State extends State<Screen4> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF8FAF93),
         elevation: 0,
-        title: Text(widget.name, style: TextStyle(color: Colors.white),),
-        leading: const Icon(Icons.menu, color: Colors.white,),
-        actions: const [
-          Icon(Icons.info_outline, color: Colors.white,),
-          SizedBox(width: 10),
+        title: Text(widget.name, style: const TextStyle(color: Colors.white)),
+        leading: const Icon(Icons.menu, color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const Screen5()),
+              );
+            },
+          ),
         ],
       ),
 
@@ -89,13 +152,13 @@ class _Screen4State extends State<Screen4> {
             _input(widget.code),
 
             _label("Fuel Tank Capacity"),
-            _input("120L"),
+            _input("${widget.capacity.toStringAsFixed(0)}L"),
 
             _label("Fuel Usage Rate"),
-            _input("10L/hr"),
+            _input("${widget.usageRate.toStringAsFixed(0)}L/hr"),
 
             _label("Fuel remaining"),
-            _input(widget.fuel),
+            _input("${remainingFuel.toStringAsFixed(1)}L"),
 
             const SizedBox(height: 30),
 
@@ -105,10 +168,13 @@ class _Screen4State extends State<Screen4> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _button("Update"),
-                _button("Report", onPressed: () {
-                  _showReportDialog(context);
-                }),
+                _button("Update", onPressed: _showUpdateDialog),
+                _button(
+                  "Report",
+                  onPressed: () {
+                    _showReportDialog(context);
+                  },
+                ),
               ],
             ),
           ],
@@ -126,19 +192,15 @@ class _Screen4State extends State<Screen4> {
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
           BottomNavigationBarItem(
             //icon: Icon(Icons.electrical_services),
             //label: "",
-              icon: Icon(Icons.local_gas_station), label: ""),
-
-          BottomNavigationBarItem(
-            icon: Icon(Icons.edit_document),
+            icon: Icon(Icons.local_gas_station),
             label: "",
           ),
+
+          BottomNavigationBarItem(icon: Icon(Icons.edit_document), label: ""),
         ],
       ),
     );
@@ -150,10 +212,7 @@ class _Screen4State extends State<Screen4> {
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 10, bottom: 6),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.grey),
-      ),
+      child: Text(text, style: const TextStyle(color: Colors.grey)),
     );
   }
 
@@ -170,10 +229,7 @@ class _Screen4State extends State<Screen4> {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: const Color(0xFFD0D0D0)),
       ),
-      child: Text(
-        value,
-        style: const TextStyle(color: Colors.black54),
-      ),
+      child: Text(value, style: const TextStyle(color: Colors.black54)),
     );
   }
 
@@ -185,9 +241,7 @@ class _Screen4State extends State<Screen4> {
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF7FA6C9),
         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       ),
       onPressed: onPressed ?? () {},
       child: Text(text),
@@ -197,77 +251,547 @@ class _Screen4State extends State<Screen4> {
   ///////////////////////////////////////////////////////////
   /// 🔹 REPORT POPUP
   ///////////////////////////////////////////////////////////
-  void _showReportDialog(BuildContext context) {
+  void _showUpdateDialog() {
     showDialog(
       context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.white,
-            ),
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Update Generator"),
+          content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ///////////////////////////////////////////////////
-                /// HEADER
-                ///////////////////////////////////////////////////
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text("Date"),
-                    Text("Run time(Hr)"),
-                    Text("Usage(L)"),
-                    Text("Balance(L)"),
-                  ],
+                _dialogInput("Generator Name", nameController),
+                const SizedBox(height: 12),
+                _dialogInput("Generator Code", codeController),
+                const SizedBox(height: 12),
+                _dialogInput(
+                  "Fuel Tank Capacity",
+                  capacityController,
+                  keyboardType: TextInputType.number,
                 ),
-
-                const SizedBox(height: 16),
-
-                ///////////////////////////////////////////////////
-                /// DATA ROWS
-                ///////////////////////////////////////////////////
-                _reportRow("20/04/2025", "4", "25", "10"),
-                const SizedBox(height: 10),
-                _reportRow("25/04/2025", "10", "50", "20"),
-
-                const SizedBox(height: 20),
-
-                ///////////////////////////////////////////////////
-                /// EXIT BUTTON
-                ///////////////////////////////////////////////////
-                OutlinedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Exit"),
+                const SizedBox(height: 12),
+                _dialogInput(
+                  "Fuel Usage Rate",
+                  usageRateController,
+                  keyboardType: TextInputType.number,
                 ),
               ],
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final generators = await StorageService.loadGenerators();
+                  final index = generators.indexWhere(
+                    (generator) =>
+                        generator.name == widget.name &&
+                        generator.code == widget.code,
+                  );
+
+                  if (index == -1) {
+                    throw Exception("Generator not found");
+                  }
+
+                  final updatedName = nameController.text.trim();
+                  final updatedGenerator = GeneratorModel(
+                    name: updatedName,
+                    code: codeController.text.trim(),
+                    capacity: double.tryParse(capacityController.text) ?? 0,
+                    usageRate: double.tryParse(usageRateController.text) ?? 0,
+                  );
+
+                  generators[index] = updatedGenerator;
+                  await StorageService.saveGenerators(generators);
+
+                  if (updatedName != widget.name) {
+                    final records = await StorageService.loadRecords();
+                    final updatedRecords = records.map((record) {
+                      if (record.generator == widget.name) {
+                        return Record(
+                          generator: updatedName,
+                          hours: record.hours,
+                          fuelAdded: record.fuelAdded,
+                          fuelUsed: record.fuelUsed,
+                          date: record.date,
+                        );
+                      }
+                      return record;
+                    }).toList();
+                    await StorageService.saveRecords(updatedRecords);
+                  }
+
+                  if (!mounted) return;
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop(true);
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(e.toString())));
+                }
+              },
+              child: const Text("Update"),
+            ),
+          ],
         );
       },
     );
   }
 
-  ///////////////////////////////////////////////////////////
-  /// 🔹 REPORT ROW
-  ///////////////////////////////////////////////////////////
-  Widget _reportRow(
-      String date, String runtime, String usage, String balance) {
+  Widget _dialogInput(
+    String label,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+    );
+  }
+
+  void _showReportDialog(BuildContext context) async {
+    List<Record> allRecords = await StorageService.loadRecords();
+    List<Record> generatorRecords = allRecords
+        .where((r) => r.generator == widget.name)
+        .toList();
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            List<Record> filtered = generatorRecords;
+            if (startDateController.text.isNotEmpty &&
+                endDateController.text.isNotEmpty) {
+              filtered = generatorRecords.where((r) {
+                return r.date.compareTo(startDateController.text) >= 0 &&
+                    r.date.compareTo(endDateController.text) <= 0;
+              }).toList();
+            }
+
+            // Calculate totals
+            double totalFuelUsed = filtered.fold(
+              0.0,
+              (sum, r) => sum + r.fuelUsed,
+            );
+            double totalFuelAdded = filtered.fold(
+              0.0,
+              (sum, r) => sum + r.fuelAdded,
+            );
+            double remainingFuel =
+                widget.capacity - totalFuelUsed + totalFuelAdded;
+
+            // Forecast
+            int totalDays = filtered.isNotEmpty
+                ? filtered.length
+                : 1; // rough estimate
+            double avgUsage = totalFuelUsed / totalDays;
+            double forecast7Days = avgUsage * 7;
+            double forecast30Days = avgUsage * 30;
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              insetPadding: const EdgeInsets.all(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ///////////////////////////////////////////////////
+                            /// TITLE
+                            ///////////////////////////////////////////////////
+                            const Text(
+                              "Generator Report",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            ///////////////////////////////////////////////////
+                            /// DATE RANGE PICKER
+                            ///////////////////////////////////////////////////
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF2F2F2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Select Date Period",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          icon: const Icon(Icons.calendar_today,
+                                              size: 18),
+                                          label: Text(
+                                            startDateController.text.isEmpty
+                                                ? "From"
+                                                : startDateController.text,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                const Color(0xFFA8D5A2),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 8,
+                                            ),
+                                          ),
+                                          onPressed: () async {
+                                            final picked = await showDatePicker(
+                                              context: context,
+                                              initialDate: DateTime.now(),
+                                              firstDate: DateTime(2000),
+                                              lastDate: DateTime.now(),
+                                            );
+                                            if (picked != null) {
+                                              startDateController.text =
+                                                  "${_twoDigits(picked.day)}/${_twoDigits(picked.month)}/${picked.year}";
+                                              setState(() {});
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          icon: const Icon(Icons.calendar_today,
+                                              size: 18),
+                                          label: Text(
+                                            endDateController.text.isEmpty
+                                                ? "To"
+                                                : endDateController.text,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                const Color(0xFFA8D5A2),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 8,
+                                            ),
+                                          ),
+                                          onPressed: () async {
+                                            final picked = await showDatePicker(
+                                              context: context,
+                                              initialDate: DateTime.now(),
+                                              firstDate: DateTime(2000),
+                                              lastDate: DateTime.now(),
+                                            );
+                                            if (picked != null) {
+                                              endDateController.text =
+                                                  "${_twoDigits(picked.day)}/${_twoDigits(picked.month)}/${picked.year}";
+                                              setState(() {});
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 14),
+
+                            ///////////////////////////////////////////////////
+                            /// SUMMARY SECTION
+                            ///////////////////////////////////////////////////
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFA8D5A2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Summary",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _summaryRow("Remaining Fuel:",
+                                      "${remainingFuel.toStringAsFixed(1)} L"),
+                                  const SizedBox(height: 6),
+                                  _summaryRow("Total Usage:",
+                                      "${totalFuelUsed.toStringAsFixed(1)} L"),
+                                  const SizedBox(height: 6),
+                                  _summaryRow("Forecast (7d):",
+                                      "${forecast7Days.toStringAsFixed(1)} L"),
+                                  const SizedBox(height: 6),
+                                  _summaryRow("Forecast (30d):",
+                                      "${forecast30Days.toStringAsFixed(1)} L"),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 14),
+
+                            ///////////////////////////////////////////////////
+                            /// RECORDS TABLE
+                            ///////////////////////////////////////////////////
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: const Color(0xFFD0D0D0),
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                children: [
+                                  ///////////////////////////////////////////////////
+                                  /// HEADER
+                                  ///////////////////////////////////////////////////
+                                  Container(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 6),
+                                    decoration: const BoxDecoration(
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: Color(0xFFD0D0D0),
+                                          width: 2,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 3,
+                                          child: Text(
+                                            "Date",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey[700],
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(
+                                            "Hours",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey[700],
+                                              fontSize: 11,
+                                            ),
+                                            textAlign: TextAlign.right,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(
+                                            "Used",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey[700],
+                                              fontSize: 11,
+                                            ),
+                                            textAlign: TextAlign.right,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(
+                                            "Balance",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey[700],
+                                              fontSize: 11,
+                                            ),
+                                            textAlign: TextAlign.right,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 6),
+
+                                  ///////////////////////////////////////////////////
+                                  /// DATA ROWS
+                                  ///////////////////////////////////////////////////
+                                  if (filtered.isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      child: Text(
+                                        "No records found",
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    ...filtered.map(
+                                      (r) => Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 4,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              flex: 3,
+                                              child: Text(
+                                                r.date,
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Text(
+                                                "${r.hours.toStringAsFixed(1)}h",
+                                                textAlign: TextAlign.right,
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Text(
+                                                "${r.fuelUsed.toStringAsFixed(1)}L",
+                                                textAlign: TextAlign.right,
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Text(
+                                                GeneratorModel.calculateRemaining(
+                                                  capacity: widget.capacity,
+                                                  usageRate:
+                                                      widget.usageRate,
+                                                  hours: r.hours,
+                                                  fuelAdded: r.fuelAdded,
+                                                ).toStringAsFixed(1),
+                                                textAlign: TextAlign.right,
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    ///////////////////////////////////////////////////
+                    /// CLOSE BUTTON (FIXED AT BOTTOM)
+                    ///////////////////////////////////////////////////
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: Color(0xFFD0D0D0),
+                          ),
+                        ),
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF7FA6C9),
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text(
+                            "Close",
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _summaryRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(date),
-        Text(runtime),
-        Text(usage),
-        Text(balance),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+          ),
+        ),
       ],
     );
   }
+
+  String _twoDigits(int value) => value.toString().padLeft(2, "0");
 }
